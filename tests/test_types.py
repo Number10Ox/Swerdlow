@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from swerdlow.types import Graph, Issue, Node
+from swerdlow.types import BootstrapIssue, BootstrapPlan, Graph, Issue, Node, Proposal
 
 
 def test_node_is_frozen():
@@ -38,3 +38,30 @@ def test_graph_is_frozen():
     g = Graph(nodes={}, edges=[], issues=[])
     with pytest.raises(Exception):
         g.nodes = {"a": "x"}
+
+
+def test_proposal_fields():
+    p = Proposal(file=Path("a.md"), add_depends_on=["b", "c"])
+    assert p.file == Path("a.md")
+    assert p.add_depends_on == ["b", "c"]
+
+
+def test_bootstrap_issue_fields():
+    bi = BootstrapIssue(file=Path("a.md"), link="../x.md", detail="outside corpus")
+    assert bi.file == Path("a.md")
+    assert bi.link == "../x.md"
+    assert bi.detail == "outside corpus"
+
+
+def test_bootstrap_plan_fields():
+    p = Proposal(file=Path("a.md"), add_depends_on=["b"])
+    bi = BootstrapIssue(file=Path("c.md"), link="../x.md", detail="missing")
+    plan = BootstrapPlan(proposals=[p], issues=[bi])
+    assert plan.proposals == [p]
+    assert plan.issues == [bi]
+
+
+def test_bootstrap_plan_defaults_empty():
+    plan = BootstrapPlan()
+    assert plan.proposals == []
+    assert plan.issues == []

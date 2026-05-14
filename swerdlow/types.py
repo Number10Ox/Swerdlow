@@ -23,3 +23,22 @@ class Graph:
     nodes: dict[str, Node] = field(default_factory=dict)
     edges: list[tuple[str, str]] = field(default_factory=list)
     issues: list[Issue] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class Proposal:
+    file: Path
+    add_depends_on: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class BootstrapIssue:
+    file: Path
+    link: str
+    detail: str
+
+
+@dataclass(frozen=True)
+class BootstrapPlan:
+    proposals: list[Proposal] = field(default_factory=list)
+    issues: list[BootstrapIssue] = field(default_factory=list)
