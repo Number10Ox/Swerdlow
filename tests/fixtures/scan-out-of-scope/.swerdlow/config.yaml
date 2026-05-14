@@ -1,0 +1,4 @@
+include:
+  - "docs/**/*.md"
+exclude:
+  - "archive/**"

@@ -26,3 +26,17 @@ def test_scan_proposes_nothing_for_empty_docs(fixture_dir):
     # simple-graph already has depends_on in frontmatter, no NEW deps in prose.
     files = {str(p.file) for p in plan.proposals}
     assert files == set()  # idempotent: already declared, nothing new
+
+
+def test_scan_issue_outside_corpus(fixture_dir):
+    plan = scan(fixture_dir / "scan-out-of-scope")
+    outside = [i for i in plan.issues if i.detail == "target outside indexed corpus"]
+    assert len(outside) == 1
+    assert "old.md" in outside[0].link
+
+
+def test_scan_issue_missing_target(fixture_dir):
+    plan = scan(fixture_dir / "scan-out-of-scope")
+    missing = [i for i in plan.issues if i.detail == "target file does not exist"]
+    assert len(missing) == 1
+    assert "does-not-exist.md" in missing[0].link
