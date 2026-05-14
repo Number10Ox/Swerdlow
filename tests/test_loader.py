@@ -49,3 +49,20 @@ def test_missing_ref_records_issue_no_edge(fixture_dir):
     assert len(missing) == 1
     assert missing[0].doc_id == "orphan"
     assert "ghost" in missing[0].detail
+
+
+def test_duplicate_id_first_wins_lexically(fixture_dir):
+    g = load_graph(fixture_dir / "duplicate-id")
+    assert "note" in g.nodes
+    # dir-a sorts before dir-b lexically, so dir-a/note.md wins
+    assert "dir-a" in str(g.nodes["note"].path)
+    dups = [i for i in g.issues if i.type == "duplicate_id"]
+    assert len(dups) == 1
+    assert "dir-a/note.md" in dups[0].detail
+    assert "dir-b/note.md" in dups[0].detail
+
+
+def test_explicit_id_overrides_filename_stem(fixture_dir):
+    g = load_graph(fixture_dir / "id-override")
+    assert "custom-id" in g.nodes
+    assert "some-file" not in g.nodes
