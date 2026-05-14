@@ -24,3 +24,9 @@ def test_deterministic_across_runs(fixture_dir):
     g2 = load_graph(fixture_dir / "simple-graph")
     assert list(g1.nodes.keys()) == list(g2.nodes.keys())
     assert g1.edges == g2.edges
+
+
+def test_no_frontmatter_block_is_silent_skip(fixture_dir):
+    g = load_graph(fixture_dir / "unindexed")
+    assert set(g.nodes.keys()) == {"indexed"}
+    assert g.issues == []
