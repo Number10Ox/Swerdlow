@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 import frontmatter
 import mistune
 
+from swerdlow.bootstrap.plan import PLAN_FILENAME, write_plan
 from swerdlow.config import load_config
 from swerdlow.loader import _walk_corpus
 from swerdlow.types import BootstrapIssue, BootstrapPlan, Proposal
@@ -86,3 +87,10 @@ def _walk(nodes, targets: list[str]) -> None:
 def _is_url(link: str) -> bool:
     parsed = urlparse(link)
     return parsed.scheme in {"http", "https", "ftp", "mailto"}
+
+
+def scan_and_write(project_root: Path, force: bool = False) -> Path:
+    plan = scan(project_root)
+    plan_path = project_root / ".swerdlow" / PLAN_FILENAME
+    write_plan(plan, plan_path, force=force)
+    return plan_path
