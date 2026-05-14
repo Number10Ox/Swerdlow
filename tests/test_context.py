@@ -42,3 +42,9 @@ def test_context_cycle_terminates_and_emits_issue(fixture_dir):
     assert {p.name for p in paths} == {"a.md", "b.md", "c.md"}
     cycle_issues = [i for i in issues if i.type == "cycle_detected"]
     assert len(cycle_issues) >= 1
+
+
+def test_context_missing_target_raises(fixture_dir):
+    g = load_graph(fixture_dir / "simple-graph")
+    with pytest.raises(ContextError, match="no indexed doc with id"):
+        context(g, "does-not-exist")
