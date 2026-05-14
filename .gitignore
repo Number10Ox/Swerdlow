@@ -7,3 +7,5 @@ venv/
 build/
 dist/
 .swerdlow/
+!tests/fixtures/**/.swerdlow/
+!tests/fixtures/**/.swerdlow/**
