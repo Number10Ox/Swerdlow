@@ -39,3 +39,13 @@ def test_malformed_yaml_records_parse_error(fixture_dir):
     parse_errors = [i for i in g.issues if i.type == "parse_error"]
     assert len(parse_errors) == 1
     assert "broken" in parse_errors[0].detail or "broken.md" in parse_errors[0].detail
+
+
+def test_missing_ref_records_issue_no_edge(fixture_dir):
+    g = load_graph(fixture_dir / "missing-ref")
+    assert "orphan" in g.nodes
+    assert g.edges == []
+    missing = [i for i in g.issues if i.type == "missing_ref"]
+    assert len(missing) == 1
+    assert missing[0].doc_id == "orphan"
+    assert "ghost" in missing[0].detail
