@@ -34,12 +34,18 @@ def _build_nodes(paths: list[Path]) -> tuple[dict[str, Node], list[Issue]]:
     nodes: dict[str, Node] = {}
     issues: list[Issue] = []
     for path in paths:
-        post = frontmatter.load(str(path))
-        # python-frontmatter returns metadata={} for files without frontmatter blocks.
-        # We need to distinguish "no block at all" from "block parses to empty".
         text = path.read_text()
         if not text.startswith("---"):
             continue  # no frontmatter block: unindexed, not an error
+        try:
+            post = frontmatter.loads(text)
+        except Exception as e:
+            issues.append(Issue(
+                type="parse_error",
+                doc_id=path.stem,
+                detail=f"{path}: failed to parse frontmatter ({e})",
+            ))
+            continue
         doc_id = post.metadata.get("id") or path.stem
         if doc_id in nodes:
             existing_path = nodes[doc_id].path

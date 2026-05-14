@@ -30,3 +30,12 @@ def test_no_frontmatter_block_is_silent_skip(fixture_dir):
     g = load_graph(fixture_dir / "unindexed")
     assert set(g.nodes.keys()) == {"indexed"}
     assert g.issues == []
+
+
+def test_malformed_yaml_records_parse_error(fixture_dir):
+    g = load_graph(fixture_dir / "parse-error")
+    assert "good" in g.nodes
+    assert "broken" not in g.nodes
+    parse_errors = [i for i in g.issues if i.type == "parse_error"]
+    assert len(parse_errors) == 1
+    assert "broken" in parse_errors[0].detail or "broken.md" in parse_errors[0].detail
