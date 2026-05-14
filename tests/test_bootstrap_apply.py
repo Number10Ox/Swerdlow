@@ -82,3 +82,19 @@ def test_apply_diff_minimal(fixture_dir, tmp_path):
     after_lines = a_path.read_text().splitlines()
     # Exactly one line added (the new dep).
     assert len(after_lines) == len(before_lines) + 1
+
+
+def test_apply_missing_target_warns_and_continues(fixture_dir, tmp_path):
+    project = _copy_fixture(fixture_dir / "apply-append", tmp_path)
+    real_path = project / "docs" / "a.md"
+    missing_path = project / "docs" / "does-not-exist.md"
+    plan = BootstrapPlan(proposals=[
+        Proposal(file=missing_path, add_depends_on=["x"]),
+        Proposal(file=real_path, add_depends_on=["new-dep"]),
+    ])
+    updated, warnings = apply(plan)
+    # Real file got updated; missing one logged.
+    assert updated == 1
+    assert len(warnings) == 1
+    assert "does-not-exist.md" in warnings[0]
+    assert "new-dep" in real_path.read_text()
