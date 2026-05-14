@@ -25,6 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     p_boot.add_argument("--force", action="store_true",
                         help="Overwrite existing plan (scan only)")
 
+    p_ctx = sub.add_parser("context", help="Print ordered context bundle for a doc id")
+    p_ctx.add_argument("doc_id", help="The id of the doc you're starting work on")
+
     args = parser.parse_args(argv)
     project_root = Path.cwd()
 
@@ -34,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.apply:
             return _cmd_bootstrap_apply(project_root)
         return _cmd_bootstrap_scan(project_root, force=args.force)
+    if args.cmd == "context":
+        return _cmd_context(project_root, args.doc_id)
     return 1
 
 
@@ -75,6 +80,29 @@ def _cmd_bootstrap_apply(project_root: Path) -> int:
     for w in warnings:
         print(f"warning: {w}", file=sys.stderr)
     print(f"Updated {updated} file(s).")
+    return 0
+
+
+def _cmd_context(project_root: Path, doc_id: str) -> int:
+    from swerdlow.config import ConfigError
+    from swerdlow.context import ContextError, context
+    from swerdlow.loader import load_graph
+    try:
+        graph = load_graph(project_root)
+    except ConfigError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    for issue in graph.issues:
+        print(f"{issue.type}: {issue.doc_id}: {issue.detail}", file=sys.stderr)
+    try:
+        paths, cycle_issues = context(graph, doc_id)
+    except ContextError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    for issue in cycle_issues:
+        print(f"{issue.type}: {issue.doc_id}: {issue.detail}", file=sys.stderr)
+    for p in paths:
+        print(p)
     return 0
 
 

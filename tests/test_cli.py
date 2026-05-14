@@ -81,3 +81,43 @@ def test_cli_bootstrap_apply_missing_plan(tmp_path):
     (tmp_path / ".swerdlow" / "config.yaml").write_text('include:\n  - "*.md"\n')
     result = _run(["bootstrap", "--apply"], cwd=tmp_path)
     assert result.returncode == 3
+
+
+def test_cli_context_prints_paths(fixture_dir, tmp_path):
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "simple-graph", project)
+    result = _run(["context", "a"], cwd=project)
+    assert result.returncode == 0
+    lines = result.stdout.strip().split("\n")
+    assert len(lines) == 2
+    assert lines[0].endswith("b.md")
+    assert lines[1].endswith("a.md")
+
+
+def test_cli_context_emits_issues_to_stderr(fixture_dir, tmp_path):
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "missing-ref", project)
+    result = _run(["context", "orphan"], cwd=project)
+    assert result.returncode == 0
+    assert "orphan.md" in result.stdout
+    assert "missing_ref" in result.stderr
+
+
+def test_cli_context_missing_target_exit_1(fixture_dir, tmp_path):
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "simple-graph", project)
+    result = _run(["context", "ghost"], cwd=project)
+    assert result.returncode == 1
+
+
+def test_cli_context_no_config_exit_2(tmp_path):
+    result = _run(["context", "x"], cwd=tmp_path)
+    assert result.returncode == 2
+
+
+def test_cli_context_cycle_to_stderr(fixture_dir, tmp_path):
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "cycle", project)
+    result = _run(["context", "a"], cwd=project)
+    assert result.returncode == 0
+    assert "cycle_detected" in result.stderr
