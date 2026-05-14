@@ -40,3 +40,10 @@ def test_scan_issue_missing_target(fixture_dir):
     missing = [i for i in plan.issues if i.detail == "target file does not exist"]
     assert len(missing) == 1
     assert "does-not-exist.md" in missing[0].link
+
+
+def test_scan_idempotent_subtracts_existing_deps(fixture_dir):
+    plan = scan(fixture_dir / "scan-idempotent")
+    # b is already in a's depends_on; scan must not re-propose it.
+    a_proposals = [p for p in plan.proposals if p.file.name == "a.md"]
+    assert a_proposals == []
