@@ -19,9 +19,16 @@ class Issue:
 
 
 @dataclass(frozen=True)
+class Edge:
+    from_id: str
+    to_id: str
+    when: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class Graph:
     nodes: dict[str, Node] = field(default_factory=dict)
-    edges: list[tuple[str, str]] = field(default_factory=list)
+    edges: list[Edge] = field(default_factory=list)
     issues: list[Issue] = field(default_factory=list)
 
 

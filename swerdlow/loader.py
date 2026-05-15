@@ -5,7 +5,7 @@ import frontmatter
 import pathspec
 
 from swerdlow.config import Config, load_config
-from swerdlow.types import Graph, Issue, Node
+from swerdlow.types import Edge, Graph, Issue, Node
 
 
 def load_graph(project_root: Path) -> Graph:
@@ -59,13 +59,13 @@ def _build_nodes(paths: list[Path]) -> tuple[dict[str, Node], list[Issue]]:
     return nodes, issues
 
 
-def _build_edges(nodes: dict[str, Node]) -> tuple[list[tuple[str, str]], list[Issue]]:
-    edges: list[tuple[str, str]] = []
+def _build_edges(nodes: dict[str, Node]) -> tuple[list[Edge], list[Issue]]:
+    edges: list[Edge] = []
     issues: list[Issue] = []
     for node in nodes.values():
         for dep in node.frontmatter.get("depends_on", []) or []:
             if dep in nodes:
-                edges.append((node.id, dep))
+                edges.append(Edge(from_id=node.id, to_id=dep, when=()))
             else:
                 issues.append(Issue(
                     type="missing_ref",

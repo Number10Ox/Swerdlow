@@ -4,12 +4,13 @@ from pathlib import Path
 import pytest
 
 from swerdlow.loader import load_graph
+from swerdlow.types import Edge
 
 
 def test_simple_graph(fixture_dir):
     g = load_graph(fixture_dir / "simple-graph")
     assert set(g.nodes.keys()) == {"a", "b"}
-    assert g.edges == [("a", "b")]
+    assert g.edges == [Edge(from_id="a", to_id="b")]
     assert g.issues == []
 
 
@@ -66,3 +67,14 @@ def test_explicit_id_overrides_filename_stem(fixture_dir):
     g = load_graph(fixture_dir / "id-override")
     assert "custom-id" in g.nodes
     assert "some-file" not in g.nodes
+
+
+def test_loader_produces_edge_instances(fixture_dir):
+    g = load_graph(fixture_dir / "simple-graph")
+    # Was: [("a", "b")]; now: [Edge(from_id="a", to_id="b", when=())]
+    assert len(g.edges) == 1
+    edge = g.edges[0]
+    assert isinstance(edge, Edge)
+    assert edge.from_id == "a"
+    assert edge.to_id == "b"
+    assert edge.when == ()
