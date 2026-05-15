@@ -46,7 +46,7 @@ Swerdlow is **complementary to**, not replacing:
 
 ```bash
 # From source:
-git clone <repo>
+git clone https://github.com/Number10Ox/Swerdlow.git
 cd Swerdlow
 pip install -e ".[dev]"
 ```
