@@ -45,3 +45,28 @@ def test_load_plan_empty_file(tmp_path):
     plan = load_plan(plan_path)
     assert plan.proposals == []
     assert plan.issues == []
+
+
+def test_plan_roundtrip_heterogeneous_add_depends_on(tmp_path):
+    """add_depends_on can contain bare strings AND dict-form entries."""
+    plan = BootstrapPlan(
+        proposals=[
+            Proposal(
+                file=Path("Docs/Mission.md"),
+                add_depends_on=[
+                    "BareForm",
+                    {"id": "DictForm", "when": ["narration"]},
+                ],
+            )
+        ],
+        issues=[],
+    )
+    plan_path = tmp_path / ".swerdlow" / "bootstrap.plan.yaml"
+    plan_path.parent.mkdir(parents=True)
+    write_plan(plan, plan_path)
+    loaded = load_plan(plan_path)
+    p = loaded.proposals[0]
+    assert p.add_depends_on == [
+        "BareForm",
+        {"id": "DictForm", "when": ["narration"]},
+    ]

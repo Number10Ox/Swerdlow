@@ -35,7 +35,7 @@ class Graph:
 @dataclass(frozen=True)
 class Proposal:
     file: Path
-    add_depends_on: list[str] = field(default_factory=list)
+    add_depends_on: list = field(default_factory=list)  # list[str | dict[str, Any]]
 
 
 @dataclass(frozen=True)
