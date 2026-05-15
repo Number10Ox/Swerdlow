@@ -63,13 +63,49 @@ def _build_edges(nodes: dict[str, Node]) -> tuple[list[Edge], list[Issue]]:
     edges: list[Edge] = []
     issues: list[Issue] = []
     for node in nodes.values():
-        for dep in node.frontmatter.get("depends_on", []) or []:
-            if dep in nodes:
-                edges.append(Edge(from_id=node.id, to_id=dep, when=()))
-            else:
+        for raw in node.frontmatter.get("depends_on", []) or []:
+            target_id, when, err = _parse_dep_entry(raw)
+            if err is not None:
+                issues.append(Issue(
+                    type="parse_error",
+                    doc_id=node.id,
+                    detail=err,
+                ))
+                continue
+            if target_id not in nodes:
                 issues.append(Issue(
                     type="missing_ref",
                     doc_id=node.id,
-                    detail=f"depends_on '{dep}' has no indexed target",
+                    detail=f"depends_on '{target_id}' has no indexed target",
                 ))
+                continue
+            edges.append(Edge(from_id=node.id, to_id=target_id, when=tuple(when)))
     return edges, issues
+
+
+def _parse_dep_entry(raw) -> tuple[str | None, list[str], str | None]:
+    """Normalize a depends_on entry. Return (id, when_list, error_or_None)."""
+    if isinstance(raw, str):
+        return raw, [], None
+    if isinstance(raw, dict):
+        target_id = raw.get("id")
+        if not isinstance(target_id, str):
+            return None, [], f"depends_on entry missing or non-string 'id': {raw!r}"
+        if "when" not in raw:
+            return target_id, [], None
+        when_raw = raw["when"]
+        if isinstance(when_raw, str):
+            if not when_raw:
+                return None, [], f"depends_on entry has empty 'when' string: {raw!r}"
+            return target_id, [when_raw], None
+        if isinstance(when_raw, list):
+            if not when_raw:
+                return None, [], (
+                    f"depends_on entry has empty when:[] — use bare string "
+                    f"or omit 'when' for always-relevant edges: {raw!r}"
+                )
+            if not all(isinstance(x, str) and x for x in when_raw):
+                return None, [], f"depends_on entry has non-string or empty in 'when' list: {raw!r}"
+            return target_id, list(when_raw), None
+        return None, [], f"depends_on entry has malformed 'when' (expected str or list of str): {raw!r}"
+    return None, [], f"depends_on entry must be string or dict, got {type(raw).__name__}: {raw!r}"

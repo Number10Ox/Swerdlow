@@ -78,3 +78,56 @@ def test_loader_produces_edge_instances(fixture_dir):
     assert edge.from_id == "a"
     assert edge.to_id == "b"
     assert edge.when == ()
+
+
+def _find_edge(graph, from_id: str, to_id: str):
+    matches = [e for e in graph.edges if e.from_id == from_id and e.to_id == to_id]
+    assert len(matches) == 1, f"expected exactly one edge {from_id}→{to_id}, got {len(matches)}"
+    return matches[0]
+
+
+def test_loader_dict_entry_no_when(fixture_dir):
+    g = load_graph(fixture_dir / "typed-edges-basic")
+    e = _find_edge(g, "a", "dict-form-no-when")
+    assert e.when == ()
+
+
+def test_loader_dict_entry_single_mode_in_list(fixture_dir):
+    g = load_graph(fixture_dir / "typed-edges-basic")
+    e = _find_edge(g, "a", "dict-with-single-mode")
+    assert e.when == ("narration",)
+
+
+def test_loader_dict_entry_multi_mode(fixture_dir):
+    g = load_graph(fixture_dir / "typed-edges-basic")
+    e = _find_edge(g, "a", "dict-with-multi-modes")
+    assert e.when == ("narration", "plan")
+
+
+def test_loader_dict_entry_when_as_single_string_coerces(fixture_dir):
+    g = load_graph(fixture_dir / "typed-edges-basic")
+    e = _find_edge(g, "a", "dict-with-string-when")
+    assert e.when == ("narration",)
+
+
+def test_loader_bare_string_still_works(fixture_dir):
+    g = load_graph(fixture_dir / "typed-edges-basic")
+    e = _find_edge(g, "a", "bare-string-form")
+    assert e.when == ()
+
+
+def test_loader_when_empty_list_is_parse_error(fixture_dir):
+    g = load_graph(fixture_dir / "typed-edges-when-empty")
+    assert all(e.to_id != "target" for e in g.edges)
+    parse_errors = [i for i in g.issues if i.type == "parse_error"]
+    assert len(parse_errors) >= 1
+    assert any("when" in e.detail.lower() for e in parse_errors)
+
+
+def test_loader_malformed_dict_entries(fixture_dir):
+    g = load_graph(fixture_dir / "typed-edges-malformed")
+    parse_errors = [i for i in g.issues if i.type == "parse_error"]
+    # 4 malformed entries → 4 parse_error issues.
+    assert len(parse_errors) == 4
+    # No edges added for any of the malformed entries.
+    assert g.edges == []
