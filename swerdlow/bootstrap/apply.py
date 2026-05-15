@@ -53,6 +53,29 @@ def _apply_to_text(text: str, add_deps: list[str], yaml: YAML) -> str:
     return _apply_greenfield(text, add_deps, yaml)
 
 
+def _existing_dep_ids_apply(deps_value) -> set[str]:
+    """Mirror scan's helper but operates on the deps list directly.
+    Handles bare-string and {id, when} dict forms."""
+    ids: set[str] = set()
+    if not deps_value:
+        return ids
+    for raw in deps_value:
+        if isinstance(raw, str):
+            ids.add(raw)
+        elif isinstance(raw, dict) and isinstance(raw.get("id"), str):
+            ids.add(raw["id"])
+    return ids
+
+
+def _entry_id_for_apply(entry) -> str:
+    """Extract the id from a plan entry (string or dict)."""
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        return entry.get("id", "")
+    return ""
+
+
 def _apply_greenfield(text: str, add_deps: list[str], yaml: YAML) -> str:
     """Prepend a new minimal frontmatter block."""
     fm = {"depends_on": list(add_deps)}
@@ -76,11 +99,12 @@ def _apply_existing(text: str, add_deps: list[str], yaml: YAML) -> str:
     body = "\n".join(lines[end_idx + 1:])
 
     fm = yaml.load(fm_text) or {}
-    existing = list(fm.get("depends_on", []) or [])
-    new_only = [d for d in add_deps if d not in existing]
+    existing_raw = list(fm.get("depends_on", []) or [])
+    existing_ids = _existing_dep_ids_apply(existing_raw)
+    new_only = [d for d in add_deps if _entry_id_for_apply(d) not in existing_ids]
     if not new_only:
         return text  # idempotent: nothing to add
-    fm["depends_on"] = existing + new_only
+    fm["depends_on"] = existing_raw + new_only
 
     buf = io.StringIO()
     yaml.dump(fm, buf)

@@ -139,3 +139,37 @@ def test_apply_preserves_lf_line_endings_greenfield(tmp_path):
     assert b"\r\n" not in new_bytes  # didn't accidentally introduce CRLF
     assert b"# A" in new_bytes
     assert b"new" in new_bytes
+
+
+def test_apply_preserves_flow_style_typed_entry(fixture_dir, tmp_path):
+    """Flow-style {id: X, when: [Y]} survives a round-trip apply without conversion to block."""
+    project = _copy_fixture(fixture_dir / "typed-flow-style", tmp_path)
+    a_path = project / "docs" / "a.md"
+    before = a_path.read_text()
+    # Apply a no-op-equivalent plan (re-declare existing) — should produce zero diff.
+    plan = BootstrapPlan(proposals=[Proposal(file=a_path, add_depends_on=["existing"])])
+    apply(plan)
+    after = a_path.read_text()
+    assert before == after, f"flow-style not preserved.\n--- before:\n{before}\n--- after:\n{after}"
+
+
+def test_apply_preserves_block_style_typed_entry(fixture_dir, tmp_path):
+    """Block-style typed entry survives a round-trip apply without conversion to flow."""
+    project = _copy_fixture(fixture_dir / "typed-block-style", tmp_path)
+    a_path = project / "docs" / "a.md"
+    before = a_path.read_text()
+    plan = BootstrapPlan(proposals=[Proposal(file=a_path, add_depends_on=["existing"])])
+    apply(plan)
+    after = a_path.read_text()
+    assert before == after, f"block-style not preserved.\n--- before:\n{before}\n--- after:\n{after}"
+
+
+def test_apply_idempotency_by_id_with_dict_existing(fixture_dir, tmp_path):
+    """Plan proposing 'existing' must subtract correctly when frontmatter has it as dict form."""
+    project = _copy_fixture(fixture_dir / "typed-flow-style", tmp_path)
+    a_path = project / "docs" / "a.md"
+    plan = BootstrapPlan(proposals=[Proposal(file=a_path, add_depends_on=["existing"])])
+    before = a_path.read_text()
+    apply(plan)
+    after = a_path.read_text()
+    assert before == after, "existing dep should NOT be re-added"
