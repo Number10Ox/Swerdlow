@@ -98,3 +98,44 @@ def test_apply_missing_target_warns_and_continues(fixture_dir, tmp_path):
     assert len(warnings) == 1
     assert "does-not-exist.md" in warnings[0]
     assert "new-dep" in real_path.read_text()
+
+
+def test_apply_preserves_crlf_line_endings(tmp_path):
+    # Build a CRLF file directly — don't rely on the fixture directory
+    # since git may normalize line endings there.
+    a_path = tmp_path / "a.md"
+    original_bytes = b"---\r\ndepends_on:\r\n  - existing\r\n---\r\n# A\r\n\r\nBody.\r\n"
+    a_path.write_bytes(original_bytes)
+
+    plan = BootstrapPlan(proposals=[Proposal(file=a_path, add_depends_on=["new"])])
+    apply(plan)
+
+    new_bytes = a_path.read_bytes()
+    # CRLF preserved on every original line; new line added (also CRLF).
+    assert b"\r\n" in new_bytes
+    # No bare-LF lines snuck in (every LF preceded by CR).
+    text = new_bytes.decode("utf-8")
+    for i, ch in enumerate(text):
+        if ch == "\n":
+            assert text[i-1] == "\r", f"bare LF at offset {i}"
+    # Body preserved.
+    assert b"# A" in new_bytes
+    assert b"Body." in new_bytes
+    # Both deps present.
+    assert b"existing" in new_bytes
+    assert b"new" in new_bytes
+
+
+def test_apply_preserves_lf_line_endings_greenfield(tmp_path):
+    """Sanity: LF files stay LF (regression check after CRLF fix)."""
+    a_path = tmp_path / "a.md"
+    original_bytes = b"# A\n\nBody.\n"
+    a_path.write_bytes(original_bytes)
+
+    plan = BootstrapPlan(proposals=[Proposal(file=a_path, add_depends_on=["new"])])
+    apply(plan)
+
+    new_bytes = a_path.read_bytes()
+    assert b"\r\n" not in new_bytes  # didn't accidentally introduce CRLF
+    assert b"# A" in new_bytes
+    assert b"new" in new_bytes

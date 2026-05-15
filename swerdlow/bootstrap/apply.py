@@ -7,6 +7,15 @@ from ruamel.yaml import YAML
 from swerdlow.types import BootstrapPlan, Proposal
 
 
+def _detect_line_ending(raw_bytes: bytes) -> str:
+    r"""Return '\r\n' if the file uses CRLF, else '\n'.
+
+    A file with any CRLF is treated as CRLF (preserves the dominant convention
+    on Windows-authored files even if a stray LF snuck in).
+    """
+    return "\r\n" if b"\r\n" in raw_bytes else "\n"
+
+
 def apply(plan: BootstrapPlan) -> tuple[int, list[str]]:
     """Apply each proposal. Return (files_updated, warnings)."""
     yaml = YAML(typ="rt")  # round-trip mode preserves comments and order
@@ -19,10 +28,21 @@ def apply(plan: BootstrapPlan) -> tuple[int, list[str]]:
         if not prop.file.exists():
             warnings.append(f"skip: {prop.file} not found")
             continue
-        text = prop.file.read_text()
+        raw_bytes = prop.file.read_bytes()
+        line_ending = _detect_line_ending(raw_bytes)
+        # Decode and normalize to LF for internal processing.
+        text = raw_bytes.decode("utf-8")
+        if line_ending == "\r\n":
+            text = text.replace("\r\n", "\n")
         new_text = _apply_to_text(text, prop.add_depends_on, yaml)
-        if new_text != text:
-            prop.file.write_text(new_text)
+        # Convert back to the file's original convention before comparing/writing.
+        if line_ending == "\r\n":
+            new_bytes = new_text.replace("\n", "\r\n").encode("utf-8")
+        else:
+            new_bytes = new_text.encode("utf-8")
+        if new_bytes != raw_bytes:
+            # write_bytes avoids any newline translation surprises.
+            prop.file.write_bytes(new_bytes)
             updated += 1
     return updated, warnings
 
