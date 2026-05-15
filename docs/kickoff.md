@@ -39,10 +39,10 @@ Swerdlow fills that gap.
 
 Both already exist in Jon's workspace. Swerdlow must work for both without per-project forks.
 
-| Project | Path | Profile |
-|---|---|---|
-| Project B | `/Users/jedwards/workspace/redacted/redacted/Project B` | 113 flat docs in `docs/`, mixed lifecycle, PRD+TDD convention, implicit cross-refs via prose. Production redacted system on redacted. |
-| ContextDrift | `/Users/jedwards/workspace/ContextDrift` | Doc-heavy project with its own `.claude/` setup, hooks, custom doc-health check. Already has discipline around CLAUDE.md / MEMORY.md line limits. |
+| Project | Profile |
+|---|---|
+| Client production codebase ("Project B") | ~113 flat docs in `docs/`, mixed lifecycle, PRD+TDD convention, implicit cross-refs via prose. Domain-specific production system. |
+| ContextDrift | Doc-heavy personal project with its own `.claude/` setup, hooks, custom doc-health check. Already has discipline around CLAUDE.md / MEMORY.md line limits. |
 
 **Success criteria:** after retrofitting, a new Claude session in either project can ask "what do I need to load to work on doc X?" and get a correct, minimal answer.
 
@@ -65,12 +65,12 @@ That repo is Jon's general "playbook to copy from and adapt" repo. Swerdlow's us
 
 ```yaml
 ---
-id: feature-spec              # stable identifier, unique per project
-title: Cost Gate Delta
+id: feature-spec                 # stable identifier, unique per project
+title: Feature Spec
 status: accepted                 # draft | accepted | superseded | archived
 type: spec                       # spec | adr | runbook | glossary | overview | audit | note
 depends_on: [glossary, module-spec, rules-spec]
-touches: [core/optimizer/some_module.py, core/keeper/rules/some_gate.py]
+touches: [core/some_module.py, core/rules/some_gate.py]
 supersedes: []                   # ids of docs this replaces
 owners: [aron]
 updated: 2026-04-15
@@ -179,8 +179,7 @@ Swerdlow ships an MCP server exposing the same operations as tools. One server p
 
 1. Read this doc end-to-end. Do not skim.
 2. Read sample docs from the pilot projects:
-   - `~/workspace/redacted/redacted/Project B/CLAUDE.md`
-   - 3–4 representative specs from `~/workspace/redacted/redacted/Project B/docs/` (e.g., `feature_spec.md`, `feature_spec_prd_tdd.md`, `redacted-spec.md`)
+   - Project B's `CLAUDE.md` and 3–4 representative specs from its `docs/` directory.
    - `~/workspace/ContextDrift/.claude/CLAUDE.md`
 3. Skim `lat.md` and `llm-wiki` on GitHub to absorb prior art patterns.
 4. Ask Jon which of the open questions need decisions before v0.1.

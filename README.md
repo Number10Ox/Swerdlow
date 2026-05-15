@@ -16,7 +16,7 @@ When you have a project with many markdown documents (specs, ADRs, runbooks, glo
 
 Existing spec-driven dev tools (Spec Kit, BMAD, Kiro, OpenSpec, Tessl, GSD) solve the *workflow* problem — proposal → spec → design → tasks → code. None of them treat the **spec corpus itself** as a first-class graph with declared dependencies. Swerdlow fills that gap.
 
-The origin: a working session on the Project B redacted project surfaced that 100+ docs were cross-referencing each other implicitly. Loading the right context for any given task required tribal knowledge. The bet was that a small generic tool would beat a project-specific workflow hack.
+The origin: a working session on a client project surfaced that 100+ docs were cross-referencing each other implicitly. Loading the right context for any given task required tribal knowledge. The bet was that a small generic tool would beat a project-specific workflow hack.
 
 ---
 
@@ -133,7 +133,7 @@ v0.1's bare-string `depends_on: [foo]` syntax is preserved verbatim in v0.2. A v
 
 ### Glob-based include/exclude, no `roots:` concept
 
-Real corpora are messy. Project B has 194 markdown files scattered across root-level `*.md`, `docs/`, and inline `core/.../README.md`. A `roots:` config concept assumes a directory; glob `include` / `exclude` doesn't. Same config shape works for narrow (`Docs/**/*.md`) and broad (`**/*.md` plus aggressive exclude) corpora.
+Real corpora are messy. Some have 200+ markdown files scattered across root-level `*.md`, `docs/`, and inline `core/.../README.md`. A `roots:` config concept assumes a directory; glob `include` / `exclude` doesn't. Same config shape works for narrow (`Docs/**/*.md`) and broad (`**/*.md` plus aggressive exclude) corpora.
 
 ### Two-phase bootstrap (scan → user edits → apply)
 
