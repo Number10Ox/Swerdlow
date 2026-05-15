@@ -27,6 +27,8 @@ def main(argv: list[str] | None = None) -> int:
 
     p_ctx = sub.add_parser("context", help="Print ordered context bundle for a doc id")
     p_ctx.add_argument("doc_id", help="The id of the doc you're starting work on")
+    p_ctx.add_argument("--for", dest="for_modes", default=None,
+                       help="Comma-separated mode tags (e.g., narration,plan)")
 
     args = parser.parse_args(argv)
     project_root = Path.cwd()
@@ -38,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_bootstrap_apply(project_root)
         return _cmd_bootstrap_scan(project_root, force=args.force)
     if args.cmd == "context":
-        return _cmd_context(project_root, args.doc_id)
+        return _cmd_context(project_root, args.doc_id, args.for_modes)
     return 1
 
 
@@ -83,7 +85,7 @@ def _cmd_bootstrap_apply(project_root: Path) -> int:
     return 0
 
 
-def _cmd_context(project_root: Path, doc_id: str) -> int:
+def _cmd_context(project_root: Path, doc_id: str, for_modes: str | None) -> int:
     from swerdlow.config import ConfigError
     from swerdlow.context import ContextError, context
     from swerdlow.loader import load_graph
@@ -94,8 +96,26 @@ def _cmd_context(project_root: Path, doc_id: str) -> int:
         return 2
     for issue in graph.issues:
         print(f"{issue.type}: {issue.doc_id}: {issue.detail}", file=sys.stderr)
+
+    modes = None
+    if for_modes is not None:
+        modes = [m.strip() for m in for_modes.split(",") if m.strip()]
+        corpus_modes: set[str] = set()
+        for e in graph.edges:
+            corpus_modes.update(e.when)
+        unknown = [m for m in modes if m not in corpus_modes]
+        if unknown:
+            sorted_corpus = sorted(corpus_modes)
+            corpus_list = ", ".join(sorted_corpus) if sorted_corpus else "(none)"
+            for u in unknown:
+                print(
+                    f"warning: mode {u!r} is not present on any edge.\n"
+                    f"         Modes used in this corpus: {corpus_list}",
+                    file=sys.stderr,
+                )
+
     try:
-        paths, cycle_issues = context(graph, doc_id)
+        paths, cycle_issues = context(graph, doc_id, modes=modes)
     except ContextError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

@@ -121,3 +121,49 @@ def test_cli_context_cycle_to_stderr(fixture_dir, tmp_path):
     result = _run(["context", "a"], cwd=project)
     assert result.returncode == 0
     assert "cycle_detected" in result.stderr
+
+
+def test_cli_context_for_flag_narration(fixture_dir, tmp_path):
+    import shutil
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "mode-filter-narration", project)
+    result = _run(["context", "NarrativeDesign", "--for", "narration"], cwd=project)
+    assert result.returncode == 0
+    names = {Path(p).name for p in result.stdout.strip().split("\n")}
+    assert names == {"NarrativeDesign.md", "GamePillars.md", "MissionGameplay.md"}
+
+
+def test_cli_context_for_flag_multi_mode(fixture_dir, tmp_path):
+    import shutil
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "mode-filter-narration", project)
+    result = _run(["context", "NarrativeDesign", "--for", "narration,plan"], cwd=project)
+    assert result.returncode == 0
+    names = {Path(p).name for p in result.stdout.strip().split("\n")}
+    assert "MissionGameplay.md" in names
+    assert "PlanTemplate.md" in names
+    assert "DeliverableSpec.md" in names
+    assert "GamePillars.md" in names
+
+
+def test_cli_context_unknown_mode_warning_lists_corpus_modes(fixture_dir, tmp_path):
+    """Per spec §9, warning includes corpus modes."""
+    import shutil
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "mode-filter-narration", project)
+    result = _run(["context", "NarrativeDesign", "--for", "nonexistent"], cwd=project)
+    assert result.returncode == 0
+    assert "nonexistent" in result.stderr
+    for mode in ("narration", "plan", "design"):
+        assert mode in result.stderr
+
+
+def test_cli_context_no_for_flag_unchanged(fixture_dir, tmp_path):
+    """v0.1 behavior preserved: context without --for returns full bundle."""
+    import shutil
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "simple-graph", project)
+    result = _run(["context", "a"], cwd=project)
+    assert result.returncode == 0
+    names = [Path(p).name for p in result.stdout.strip().split("\n")]
+    assert names == ["b.md", "a.md"]
