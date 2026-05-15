@@ -20,6 +20,8 @@ $ swerdlow bootstrap                  # scans corpus, writes .swerdlow/bootstrap
 $ ${EDITOR:-vi} .swerdlow/bootstrap.plan.yaml   # review / adjust / enrich
 $ swerdlow bootstrap --apply          # writes depends_on: into your markdown files
 $ swerdlow context Combat             # prints ordered context bundle for Combat.md
+$ swerdlow modes                      # discover modes used in this corpus
+$ swerdlow context Combat --for narration  # filter the bundle to narration-mode edges
 ```
 
 ## Concepts
@@ -28,9 +30,12 @@ $ swerdlow context Combat             # prints ordered context bundle for Combat
 - **`depends_on:`** — frontmatter list of ids the doc needs as context. Each id defaults to filename stem.
 - **Bundle / context** — the target doc plus all transitive `depends_on` deps, deepest first.
 - **Bootstrap** — scan for existing markdown links, propose `depends_on:` entries, write to a plan file you review before applying.
+- **Typed edges** — `depends_on` entries can be bare strings (always relevant) or `{id, when: [mode1, mode2]}` dicts (only relevant for the listed modes). `when: []` is a parse error; use bare string or omit `when:` for "always."
+- **Mode filtering** — `swerdlow context X --for narration,plan` walks only the edges whose `when:` includes `narration` or `plan`, plus all always-edges. Filter applies at every traversal hop, so non-matching branches cut their descendants too.
+- **Mode discovery** — `swerdlow modes` lists the mode tags present in the corpus with edge and doc counts. Use it to spot typos before they bite.
 
 See `docs/superpowers/specs/2026-05-14-swerdlow-v0.1-design.md` for the design.
 
 ## Status
 
-v0.1. Read + write + context query. No visualization, MCP, reverse lookup, or `check` yet — see the design doc for v0.2+ scope.
+v0.2.0 — typed edges, mode scoping, mode discovery. Visualize / reverse / check / MCP remain v0.3+.
