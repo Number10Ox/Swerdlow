@@ -90,3 +90,10 @@ def test_scan_proposes_empty_deps_for_true_orphan(fixture_dir):
     assert "orphan.md" in files  # true orphan must get a proposal
     orphan_props = [p for p in plan.proposals if p.file.name == "orphan.md"]
     assert orphan_props[0].add_depends_on == []
+
+
+def test_scan_idempotency_handles_dict_form(fixture_dir):
+    """scan must subtract IDs from dict-form entries too; not just bare strings."""
+    plan = scan(fixture_dir / "bootstrap-typed-idempotent")
+    a_proposals = [p for p in plan.proposals if p.file.name == "a.md"]
+    assert a_proposals == []

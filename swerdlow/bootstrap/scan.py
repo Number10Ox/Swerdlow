@@ -11,6 +11,18 @@ from swerdlow.loader import _walk_corpus
 from swerdlow.types import BootstrapIssue, BootstrapPlan, Proposal
 
 
+def _existing_dep_ids(metadata: dict) -> set[str]:
+    """Return the set of declared depends_on target IDs, ignoring mode metadata.
+    Handles both bare-string and {id, when} dict forms in a single pass."""
+    ids: set[str] = set()
+    for raw in metadata.get("depends_on", []) or []:
+        if isinstance(raw, str):
+            ids.add(raw)
+        elif isinstance(raw, dict) and isinstance(raw.get("id"), str):
+            ids.add(raw["id"])
+    return ids
+
+
 def scan(project_root: Path) -> BootstrapPlan:
     cfg = load_config(project_root)
     paths = _walk_corpus(cfg)
@@ -27,7 +39,7 @@ def scan(project_root: Path) -> BootstrapPlan:
         if has_frontmatter:
             try:
                 post = frontmatter.loads(text)
-                existing_deps = set(post.metadata.get("depends_on", []) or [])
+                existing_deps = _existing_dep_ids(post.metadata)
             except Exception:
                 pass  # parse_error handled by loader, not scan
 
