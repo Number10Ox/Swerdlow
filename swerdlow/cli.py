@@ -30,6 +30,8 @@ def main(argv: list[str] | None = None) -> int:
     p_ctx.add_argument("--for", dest="for_modes", default=None,
                        help="Comma-separated mode tags (e.g., narration,plan)")
 
+    p_modes = sub.add_parser("modes", help="List mode tags present in the corpus")
+
     args = parser.parse_args(argv)
     project_root = Path.cwd()
 
@@ -41,6 +43,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_bootstrap_scan(project_root, force=args.force)
     if args.cmd == "context":
         return _cmd_context(project_root, args.doc_id, args.for_modes)
+    if args.cmd == "modes":
+        return _cmd_modes(project_root)
     return 1
 
 
@@ -123,6 +127,34 @@ def _cmd_context(project_root: Path, doc_id: str, for_modes: str | None) -> int:
         print(f"{issue.type}: {issue.doc_id}: {issue.detail}", file=sys.stderr)
     for p in paths:
         print(p)
+    return 0
+
+
+def _cmd_modes(project_root: Path) -> int:
+    from swerdlow.config import ConfigError
+    from swerdlow.loader import load_graph
+    try:
+        graph = load_graph(project_root)
+    except ConfigError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
+    edge_count: dict[str, int] = {}
+    doc_set: dict[str, set[str]] = {}
+    for e in graph.edges:
+        for mode in e.when:
+            edge_count[mode] = edge_count.get(mode, 0) + 1
+            doc_set.setdefault(mode, set()).add(e.from_id)
+
+    sorted_modes = sorted(edge_count.items(), key=lambda kv: (-kv[1], kv[0]))
+
+    if not sorted_modes:
+        return 0
+
+    width = max(len(m) for m, _ in sorted_modes)
+    for mode, ec in sorted_modes:
+        dc = len(doc_set[mode])
+        print(f"{mode.ljust(width)}  {ec:>2} edges, {dc:>2} docs")
     return 0
 
 

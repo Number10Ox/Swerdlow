@@ -167,3 +167,35 @@ def test_cli_context_no_for_flag_unchanged(fixture_dir, tmp_path):
     assert result.returncode == 0
     names = [Path(p).name for p in result.stdout.strip().split("\n")]
     assert names == ["b.md", "a.md"]
+
+
+def test_cli_modes_empty_corpus(fixture_dir, tmp_path):
+    """No typed edges → empty output, exit zero."""
+    import shutil
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "modes-empty", project)
+    result = _run(["modes"], cwd=project)
+    assert result.returncode == 0
+    assert result.stdout.strip() == ""
+
+
+def test_cli_modes_mixed_corpus(fixture_dir, tmp_path):
+    """Lists each mode with edge count and doc count, sorted by edge count desc."""
+    import shutil
+    project = tmp_path / "p"
+    shutil.copytree(fixture_dir / "modes-mixed", project)
+    result = _run(["modes"], cwd=project)
+    assert result.returncode == 0
+    lines = [ln for ln in result.stdout.strip().split("\n") if ln.strip()]
+    # Expected modes: narration (3 edges), plan (1), design (1).
+    # Untyped always-dep is NOT listed.
+    assert lines[0].startswith("narration")
+    assert "3 edges" in lines[0]
+    for ln in lines:
+        assert "edges" in ln
+        assert "docs" in ln
+    joined = "\n".join(lines)
+    assert "narration" in joined
+    assert "plan" in joined
+    assert "design" in joined
+    assert "always" not in joined
