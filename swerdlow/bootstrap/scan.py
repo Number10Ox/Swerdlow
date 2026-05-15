@@ -15,15 +15,9 @@ def scan(project_root: Path) -> BootstrapPlan:
     cfg = load_config(project_root)
     paths = _walk_corpus(cfg)
     indexed_stems = {p.stem for p in paths}
-    path_by_stem = {p.stem: p for p in paths}
 
     proposals: list[Proposal] = []
     issues: list[BootstrapIssue] = []
-    # Track in-corpus link targets so we can ensure leaf files (target but no
-    # outgoing links of their own) still get a frontmatter block via apply —
-    # otherwise the loader treats them as unindexed and they disappear from
-    # context bundles even though they're legitimate corpus members.
-    referenced_stems: set[str] = set()
 
     for path in paths:
         text = path.read_text()
@@ -44,8 +38,6 @@ def scan(project_root: Path) -> BootstrapPlan:
                 continue
             stem = Path(link).stem
             if stem in indexed_stems:
-                if stem != path.stem:
-                    referenced_stems.add(stem)
                 if stem not in existing_deps and stem not in new_deps and stem != path.stem:
                     new_deps.append(stem)
             else:
@@ -59,18 +51,20 @@ def scan(project_root: Path) -> BootstrapPlan:
         if new_deps:
             proposals.append(Proposal(file=path, add_depends_on=new_deps))
 
-    # Ensure referenced leaf files (in corpus, lack frontmatter, no outgoing
-    # links to propose) get a minimal frontmatter block so they show up in the
-    # graph after apply. Skip files already in proposals or that already have
-    # frontmatter.
+    # Ensure every indexed file without frontmatter gets at least an empty-deps
+    # Proposal so apply will frontmatter it and the loader will index it. This
+    # subsumes the Task-25 leaf-target fix (link-targets that lack frontmatter)
+    # and also covers "true orphans" — files in the include set with neither
+    # incoming nor outgoing markdown links — which would otherwise stay
+    # unfrontmatter'd and silently unindexed. Skip files already in proposals
+    # and files that already have frontmatter (idempotency).
     proposed_files = {p.file for p in proposals}
-    for stem in sorted(referenced_stems):
-        target = path_by_stem.get(stem)
-        if target is None or target in proposed_files:
+    for path in paths:
+        if path in proposed_files:
             continue
-        if target.read_text().startswith("---"):
+        if path.read_text().startswith("---"):
             continue
-        proposals.append(Proposal(file=target, add_depends_on=[]))
+        proposals.append(Proposal(file=path, add_depends_on=[]))
 
     return BootstrapPlan(proposals=proposals, issues=issues)
 

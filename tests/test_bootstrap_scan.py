@@ -82,3 +82,11 @@ def test_scan_force_overwrites(fixture_dir, tmp_path):
     shutil.copytree(fixture_dir / "scan-greenfield", project)
     scan_and_write(project)
     scan_and_write(project, force=True)  # should succeed
+
+
+def test_scan_proposes_empty_deps_for_true_orphan(fixture_dir):
+    plan = scan(fixture_dir / "scan-true-orphan")
+    files = {p.file.name for p in plan.proposals}
+    assert "orphan.md" in files  # true orphan must get a proposal
+    orphan_props = [p for p in plan.proposals if p.file.name == "orphan.md"]
+    assert orphan_props[0].add_depends_on == []
